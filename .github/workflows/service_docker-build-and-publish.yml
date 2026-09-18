@@ -26,12 +26,12 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Login to DockerHub
-        if: env.DOCKER_HUB_USERNAME != ''
+        if: env.DOCKER_HUB_ACCESS_TOKEN != ''
         env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME || 'ays77' }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Login to GitHub Container Registry
@@ -60,7 +60,16 @@ jobs:
           fi
 
       - name: "📦 Assemble the Docker Tags"
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         run: |
+          if [ -n "$DOCKER_HUB_ACCESS_TOKEN" ]; then
+            DOCKER_USER="${DOCKER_HUB_USERNAME:-ays77}"
+            export DOCKER_ORGANIZATIONS="ghcr.io/ays7 ${DOCKER_USER}"
+          else
+            export DOCKER_ORGANIZATIONS="ghcr.io/ays7"
+          fi
           if [ "${{ github.ref_type }}" == "tag" ]; then
             bash build.sh \
               --release-type ${{ inputs.release_type }} \

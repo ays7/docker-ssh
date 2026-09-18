@@ -25,6 +25,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub
+        if: env.DOCKER_HUB_ACCESS_TOKEN != ''
+        env:
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME || 'ays77' }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -33,6 +42,9 @@ jobs:
 
       - name: Determine Docker Tags
         id: meta
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           TAGS=(
@@ -40,6 +52,16 @@ jobs:
             "ghcr.io/ays7/ssh-tunnels-server:moe"
             "ghcr.io/ays7/ssh-tunnels-server:${SHORT_SHA}"
           )
+          if [ -n "$DOCKER_HUB_ACCESS_TOKEN" ]; then
+            DOCKER_USER="${DOCKER_HUB_USERNAME:-ays77}"
+            TAGS+=(
+              "${DOCKER_USER}/ssh-tunnels-server:latest"
+              "${DOCKER_USER}/ssh-tunnels-server:moe"
+              "${DOCKER_USER}/ssh-tunnels-server:${SHORT_SHA}"
+            )
+          else
+            echo "::warning::DOCKER_HUB_ACCESS_TOKEN is not set. Skipping Docker Hub push."
+          fi
           TAGS_CSV=$(IFS=,; echo "${TAGS[*]}")
           echo "tags=${TAGS_CSV}" >> "$GITHUB_OUTPUT"
 

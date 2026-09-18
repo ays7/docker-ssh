@@ -38,7 +38,7 @@ RUN apk add --no-cache ${PACKAGE_DEPENDENCIES} && \
 # Expose the SSH port
 EXPOSE 2222
 
-LABEL org.opencontainers.image.title="ays7/docker-ssh" \
+LABEL org.opencontainers.image.title="ays7/ssh-tunnels-server" \
     org.opencontainers.image.description="Hardened SSH tunnel container. Exclusively for port forwarding and secure connections into clusters." \
     org.opencontainers.image.url="https://github.com/ays7/docker-ssh" \
     org.opencontainers.image.source="https://github.com/ays7/docker-ssh" \

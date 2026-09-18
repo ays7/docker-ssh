@@ -27,9 +27,9 @@ It provides a hardened SSH tunnel container based on Alpine Linux, designed excl
 ## Usage
 This is a list of the docker images this repository creates:
 
-| Image | Image Size | Description |
-| --------- | -------------------- | ----------- |
-| `ays7/docker-ssh` |[![DockerHub](https://img.shields.io/badge/dockerhub-ays7%2Fdocker--ssh-blue)](https://hub.docker.com/r/ays7/docker-ssh) | A hardened SSH tunnel server based on Alpine Linux (~18MB). |
+| Image | Description |
+| --------- | ----------- |
+| `ghcr.io/ays7/ssh-tunnels-server` | A hardened SSH tunnel server based on Alpine Linux (~18MB). |
 
 ## Usage instructions
 All variables are documented here:
@@ -70,7 +70,7 @@ ALLOWED_IPS="AllowUsers *@192.168.1.0/24 *@172.16.0.1 *@10.0.*.1"
 ### 3. Forward your external port to `2222` on the container
 You can see I'm forwarding `12345` to `2222`.
 ```sh
-docker run --rm --name=ssh --network=web -p 12345:2222 localhost/ssh
+docker run --rm --name=ssh --network=web -p 12345:2222 ghcr.io/ays7/ssh-tunnels-server:latest
 ```
 Because interactive shell logins and command executions are locked down, connect with `-N` (no command execution) when establishing tunnels:
 ```sh
@@ -91,7 +91,7 @@ services:
       MARIADB_ROOT_PASSWORD: "myrootpassword"
 
   ssh:
-    image: serversideup/docker-ssh
+    image: ghcr.io/ays7/ssh-tunnels-server:latest
     ports:
       - target: 2222
         published: 2222
@@ -125,7 +125,7 @@ services:
       MARIADB_ROOT_PASSWORD: "myrootpassword"
 
   ssh:
-    image: serversideup/docker-ssh
+    image: ghcr.io/ays7/ssh-tunnels-server:latest
     ports:
       - target: 2222
         published: 2222

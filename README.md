@@ -49,6 +49,14 @@ SSH_USER|Username for the SSH user that other users will connect into as.|`tunne
 SSH_PERMIT_OPEN|Optional whitespace- or comma-separated list of `host:port` destinations allowed for port forwarding (e.g. `db:5432 redis:6379`).|unset (all destinations permitted)
 SSH_ALLOW_AGENT_FORWARDING|Allow SSH agent forwarding (`yes` or `no`).|`no`
 SSH_BANNER|SSH connection banner displayed on connect (even with `-N`). Can be text, a file path, or `false`/`none` to disable.|`Connected to SSH Tunnel Server.`
+SSH_IPQOS|IP Quality of Service / DSCP packet tagging. Set to `none` to prevent `cs1` scavenger tagging on tunnels.|`none`
+SSH_COMPRESSION|SSH protocol compression (`yes` or `no`). Set to `no` to eliminate CPU overhead and buffering latency.|`no`
+SSH_MAX_SESSIONS|Maximum open multiplexed sessions per connection.|`100`
+SSH_MAX_STARTUPS|Maximum unauthenticated concurrent connection attempts (`start:rate:full`).|`100:30:500`
+SSH_TCP_KEEPALIVE|Enable TCP keepalive probes (`yes` or `no`).|`yes`
+SSH_CIPHERS|Allowed ciphers list (hardware-accelerated AES-GCM prioritized first).|`aes128-gcm@openssh.com,aes256-gcm@openssh.com,...`
+SSH_MACS|Allowed MAC algorithms list.|`umac-128-etm@openssh.com,umac-64-etm@openssh.com,...`
+SSH_KEX_ALGORITHMS|Allowed key exchange algorithms list.|`curve25519-sha256,curve25519-sha256@libssh.org,...`
 
 
 ### 1. Set your `AUTHORIZED_KEYS` environment variable or provide a `/authorized_keys` file
@@ -175,12 +183,42 @@ You can restrict which destinations and ports clients are allowed to forward to 
 environment:
   SSH_PERMIT_OPEN: "mariadb:3306 redis:6379 internal-api.domain:443"
 ```
-Any attempt to forward to a non-permitted host or port will be rejected by `sshd`.
-
 ### 3. Dynamic SOCKS Proxy (`-D`)
 Create a dynamic SOCKS5 proxy on local port `1080` to route traffic through the container network:
 ```sh
 ssh -N -p 12345 -D 1080 tunnel@myserver.test
+```
+
+## Performance & Tunnel Optimization
+
+This image is tuned out-of-the-box for high throughput and low latency port-forwarding tunnels:
+
+### 1. What was tuned on the server
+- **`IPQoS none`**: By default, OpenSSH 7.8+ marks non-interactive sessions (including all port-forwarding and `-N` tunnels) with DSCP `cs1` (Class Selector 1 / RFC 3662 "Lower Effort" scavenger class). Many home Wi-Fi routers (WMM background queue), ISPs, and cloud hypervisors (AWS, GCP) heavily deprioritize, rate-limit, or drop CS1 packets under load, triggering TCP congestion collapses and terrible throughput. Setting `IPQoS none` eliminates CS1 tagging so packets travel as standard Best Effort TCP traffic.
+- **`Compression no`**: Compression in single-threaded OpenSSH introduces significant CPU overhead and packet buffering delays. For database queries, APIs, HTTPS/TLS traffic, and media streams, disabling compression dramatically increases throughput and reduces latency.
+- **`UseDNS no`**: Disables reverse DNS lookups on client IP addresses, eliminating connection initialization delays in container networks.
+- **Hardware-Accelerated Ciphers**: Prioritizes `aes128-gcm@openssh.com` and `aes256-gcm@openssh.com` first, taking advantage of hardware AES-NI / ARMv8 Crypto instructions on modern CPUs for multiple GB/s throughput.
+- **Key Exchange Tuning**: Prioritizes `curve25519-sha256` first, avoiding large-packet fragmentation (>1000 bytes) on networks with MTU < 1500 (such as Docker bridges, VPNs, or WireGuard).
+- **Concurrency Headroom**: `MaxSessions` is increased to `100` and `MaxStartups` to `100:30:500`, preventing connection throttling when multi-threaded clients (like DBeaver or browser SOCKS) open parallel tunnel channels.
+
+### 2. Recommended client-side configuration
+While server settings optimize traffic sent from the server to your client, packets sent from **client to server** are governed by your local SSH client configuration. For optimal bidirectional throughput and latency, add the following to your `~/.ssh/config`:
+
+```ssh
+Host myserver.test
+    # Prevent client from tagging tunnel packets with CS1 scavenger class
+    IPQoS none
+    
+    # Disable client-side compression to avoid CPU bottlenecks
+    Compression no
+    
+    # Prefer hardware-accelerated AES-GCM ciphers
+    Ciphers aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com
+    
+    # Optional: Reuse existing SSH connection for instant subsequent tunnels
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h:%p
+    ControlPersist 10m
 ```
 
 ## Resources

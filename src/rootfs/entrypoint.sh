@@ -9,6 +9,14 @@ ssh_user_home="/home/${ssh_user}"
 ssh_port=${SSH_PORT:-"2222"}
 allow_agent_forwarding=${SSH_ALLOW_AGENT_FORWARDING:-"no"}
 ssh_banner=${SSH_BANNER:-"Connected to SSH Tunnel Server."}
+ssh_ipqos=${SSH_IPQOS:-"none"}
+ssh_compression=${SSH_COMPRESSION:-"no"}
+ssh_ciphers=${SSH_CIPHERS:-"aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr"}
+ssh_macs=${SSH_MACS:-"umac-128-etm@openssh.com,umac-64-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com"}
+ssh_kex_algorithms=${SSH_KEX_ALGORITHMS:-"curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,sntrup761x25519-sha512@openssh.com,mlkem768x25519-sha256"}
+ssh_max_sessions=${SSH_MAX_SESSIONS:-"100"}
+ssh_max_startups=${SSH_MAX_STARTUPS:-"100:30:500"}
+ssh_tcp_keepalive=${SSH_TCP_KEEPALIVE:-"yes"}
 
 
 if [ "$DEBUG" = "true" ]; then
@@ -92,9 +100,11 @@ echo "🤖 Setting SSHD configuration..."
     echo "Port ${ssh_port}"
     echo "PermitRootLogin no"
     echo "PermitEmptyPasswords no"
-    echo "MaxAuthTries 5"
-    echo "LoginGraceTime 20"
+    echo "MaxAuthTries 3"
+    echo "LoginGraceTime 15"
     echo "ChallengeResponseAuthentication no"
+    echo "KerberosAuthentication no"
+    echo "GSSAPIAuthentication no"
     echo "X11Forwarding no"
     echo "AllowAgentForwarding ${allow_agent_forwarding}"
     echo "AllowStreamLocalForwarding no"
@@ -112,19 +122,23 @@ echo "🤖 Setting SSHD configuration..."
     # Strict authentication
     echo "PasswordAuthentication no"
     echo "AuthenticationMethods publickey"
+    # Performance and network optimizations
+    echo "UseDNS no"
+    echo "TCPKeepAlive ${ssh_tcp_keepalive}"
+    echo "IPQoS ${ssh_ipqos}"
+    echo "Compression ${ssh_compression}"
+    echo "Ciphers ${ssh_ciphers}"
+    echo "MACs ${ssh_macs}"
+    echo "KexAlgorithms ${ssh_kex_algorithms}"
     # Debian-specific options
     if [ -f /etc/debian_version ]; then
         echo "DebianBanner no"
-        echo "KerberosAuthentication no"
-        echo "GSSAPIAuthentication no"
         echo "UsePAM no"
         echo "PrintLastLog yes"
     fi
-    # Brute force protection
-    echo "MaxSessions 10"
-    echo "MaxAuthTries 3"
-    echo "LoginGraceTime 15"
-    echo "MaxStartups 10:30:100"
+    # Brute force protection & session limits
+    echo "MaxSessions ${ssh_max_sessions}"
+    echo "MaxStartups ${ssh_max_startups}"
     echo "ClientAliveInterval 300"
     echo "ClientAliveCountMax 2"
     echo "GatewayPorts no"

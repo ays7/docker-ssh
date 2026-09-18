@@ -7,7 +7,9 @@ ENV ALLOWED_IPS="AllowUsers tunnel" \
     PGID=9999 \
     PUID=9999 \
     SSH_BANNER="Connected to SSH Tunnel Server." \
+    SSH_COMPRESSION="no" \
     SSH_HOST_KEY_DIR="/etc/ssh/ssh_host_keys" \
+    SSH_IPQOS="none" \
     SSH_PORT="2222" \
     SSH_USER="tunnel"
 

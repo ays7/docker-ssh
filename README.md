@@ -49,6 +49,7 @@ SSH_USER|Username for the SSH user that other users will connect into as.|`tunne
 SSH_PERMIT_OPEN|Optional whitespace- or comma-separated list of `host:port` destinations allowed for port forwarding (e.g. `db:5432 redis:6379`).|unset (all destinations permitted)
 SSH_ALLOW_AGENT_FORWARDING|Allow SSH agent forwarding (`yes` or `no`).|`no`
 SSH_BANNER|SSH connection banner displayed on connect (even with `-N`). Can be text, a file path, or `false`/`none` to disable.|`Connected to SSH Tunnel Server.`
+SSH_ADDRESS_FAMILY|Address family used by SSH server and outgoing forwarded channels (`inet` for IPv4 only, `inet6` for IPv6 only, or `any`). Default `inet` prevents container IPv6 lookup/connection timeout delays.|`inet`
 SSH_IPQOS|IP Quality of Service / DSCP packet tagging. Set to `none` to prevent `cs1` scavenger tagging on tunnels.|`none`
 SSH_COMPRESSION|SSH protocol compression (`yes` or `no`). Set to `no` to eliminate CPU overhead and buffering latency.|`no`
 SSH_MAX_SESSIONS|Maximum open multiplexed sessions per connection.|`100`
@@ -194,6 +195,7 @@ ssh -N -p 12345 -D 1080 tunnel@myserver.test
 This image is tuned out-of-the-box for high throughput and low latency port-forwarding tunnels:
 
 ### 1. What was tuned on the server
+- **`AddressFamily inet` (IPv4 Only)**: In containerized setups (Docker/Podman bridge or user networks), Alpine's `musl libc` resolves A and AAAA records in parallel and prioritizes IPv6. Because container networks rarely route IPv6 outbound, `sshd` attempts to connect to IPv6 targets first, stalling for seconds on TCP SYN timeouts before falling back to IPv4 (causing initial page delays and tail latency on secondary web assets). Setting `AddressFamily inet` forces IPv4-only resolution and connections, eliminating these multi-second timeouts.
 - **`IPQoS none`**: By default, OpenSSH 7.8+ marks non-interactive sessions (including all port-forwarding and `-N` tunnels) with DSCP `cs1` (Class Selector 1 / RFC 3662 "Lower Effort" scavenger class). Many home Wi-Fi routers (WMM background queue), ISPs, and cloud hypervisors (AWS, GCP) heavily deprioritize, rate-limit, or drop CS1 packets under load, triggering TCP congestion collapses and terrible throughput. Setting `IPQoS none` eliminates CS1 tagging so packets travel as standard Best Effort TCP traffic.
 - **`Compression no`**: Compression in single-threaded OpenSSH introduces significant CPU overhead and packet buffering delays. For database queries, APIs, HTTPS/TLS traffic, and media streams, disabling compression dramatically increases throughput and reduces latency.
 - **`UseDNS no`**: Disables reverse DNS lookups on client IP addresses, eliminating connection initialization delays in container networks.

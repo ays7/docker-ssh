@@ -6,6 +6,7 @@ ENV ALLOWED_IPS="AllowUsers tunnel" \
     DEBUG_MODE="false" \
     PGID=9999 \
     PUID=9999 \
+    SSH_ADDRESS_FAMILY="inet" \
     SSH_BANNER="Connected to SSH Tunnel Server." \
     SSH_COMPRESSION="no" \
     SSH_HOST_KEY_DIR="/etc/ssh/ssh_host_keys" \

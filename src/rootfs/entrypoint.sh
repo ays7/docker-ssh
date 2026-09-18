@@ -9,6 +9,7 @@ ssh_user_home="/home/${ssh_user}"
 ssh_port=${SSH_PORT:-"2222"}
 allow_agent_forwarding=${SSH_ALLOW_AGENT_FORWARDING:-"no"}
 ssh_banner=${SSH_BANNER:-"Connected to SSH Tunnel Server."}
+ssh_address_family=${SSH_ADDRESS_FAMILY:-"inet"}
 ssh_ipqos=${SSH_IPQOS:-"none"}
 ssh_compression=${SSH_COMPRESSION:-"no"}
 ssh_ciphers=${SSH_CIPHERS:-"aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr"}
@@ -98,13 +99,12 @@ fi
 echo "🤖 Setting SSHD configuration..."
 {
     echo "Port ${ssh_port}"
+    echo "AddressFamily ${ssh_address_family}"
     echo "PermitRootLogin no"
     echo "PermitEmptyPasswords no"
     echo "MaxAuthTries 3"
     echo "LoginGraceTime 15"
     echo "ChallengeResponseAuthentication no"
-    echo "KerberosAuthentication no"
-    echo "GSSAPIAuthentication no"
     echo "X11Forwarding no"
     echo "AllowAgentForwarding ${allow_agent_forwarding}"
     echo "AllowStreamLocalForwarding no"
@@ -133,6 +133,8 @@ echo "🤖 Setting SSHD configuration..."
     # Debian-specific options
     if [ -f /etc/debian_version ]; then
         echo "DebianBanner no"
+        echo "KerberosAuthentication no"
+        echo "GSSAPIAuthentication no"
         echo "UsePAM no"
         echo "PrintLastLog yes"
     fi

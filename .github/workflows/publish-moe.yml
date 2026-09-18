@@ -39,9 +39,6 @@ jobs:
             "ghcr.io/ays7/ssh-tunnels-server:latest"
             "ghcr.io/ays7/ssh-tunnels-server:moe"
             "ghcr.io/ays7/ssh-tunnels-server:${SHORT_SHA}"
-            "ghcr.io/ays7/ssh-tunnels-sever:latest"
-            "ghcr.io/ays7/ssh-tunnels-sever:moe"
-            "ghcr.io/ays7/ssh-tunnels-sever:${SHORT_SHA}"
           )
           TAGS_CSV=$(IFS=,; echo "${TAGS[*]}")
           echo "tags=${TAGS_CSV}" >> "$GITHUB_OUTPUT"

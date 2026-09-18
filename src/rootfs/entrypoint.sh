@@ -103,13 +103,10 @@ echo "🤖 Setting SSHD configuration..."
 {
     echo "Port ${ssh_port}"
     echo "PermitRootLogin no"
-    echo "DebianBanner no"
     echo "PermitEmptyPasswords no"
     echo "MaxAuthTries 5"
     echo "LoginGraceTime 20"
     echo "ChallengeResponseAuthentication no"
-    echo "KerberosAuthentication no"
-    echo "GSSAPIAuthentication no"
     echo "X11Forwarding no"
     echo "AllowAgentForwarding ${allow_agent_forwarding}"
     echo "AllowStreamLocalForwarding no"
@@ -124,11 +121,17 @@ echo "🤖 Setting SSHD configuration..."
     echo "LogLevel VERBOSE"
     # Enable MOTD display
     echo "PrintMotd yes"
-    echo "PrintLastLog yes"
     # Strict authentication
     echo "PasswordAuthentication no"
-    echo "UsePAM no"
     echo "AuthenticationMethods publickey"
+    # Debian-specific options
+    if [ -f /etc/debian_version ]; then
+        echo "DebianBanner no"
+        echo "KerberosAuthentication no"
+        echo "GSSAPIAuthentication no"
+        echo "UsePAM no"
+        echo "PrintLastLog yes"
+    fi
     # Brute force protection
     echo "MaxSessions 10"
     echo "MaxAuthTries 3"

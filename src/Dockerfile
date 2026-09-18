@@ -1,12 +1,9 @@
 # syntax=docker/dockerfile:1
 # check=skip=SecretsUsedInArgOrEnv
-FROM debian:bookworm-slim
+FROM alpine:latest
 
 ENV ALLOWED_IPS="AllowUsers tunnel" \
     DEBUG_MODE="false" \
-    DEBIAN_FRONTEND=noninteractive \
-    LANG="C.UTF-8" \
-    LC_ALL="C.UTF-8" \
     PGID=9999 \
     PUID=9999 \
     SSH_HOST_KEY_DIR="/etc/ssh/ssh_host_keys" \
@@ -14,12 +11,15 @@ ENV ALLOWED_IPS="AllowUsers tunnel" \
     SSH_USER="tunnel" \
     SSH_GATEWAYPORTS="no"
 
-ARG PACKAGE_DEPENDENCIES="openssh-server,tini" \
+ARG PACKAGE_DEPENDENCIES="openssh shadow tini" \
     REPOSITORY_BUILD_VERSION="dev"
 
 COPY --chown=root:root --chmod=755 src/rootfs /
 
-RUN serversideup-dep-install-debian ${PACKAGE_DEPENDENCIES} && \
+RUN apk add --no-cache ${PACKAGE_DEPENDENCIES} && \
+    \
+    # Ensure /usr/bin/tini exists if installed in /sbin/tini
+    ([ -e /usr/bin/tini ] || ln -s /sbin/tini /usr/bin/tini) && \
     \
     # Create unprivileged user
     serversideup-create-unprivileged-user "$SSH_USER" "${PUID}" "${PGID}" && \
@@ -30,7 +30,7 @@ RUN serversideup-dep-install-debian ${PACKAGE_DEPENDENCIES} && \
     chmod 700 /home/$SSH_USER/.ssh && \
     \
     # Create run directory
-    mkdir -p /run/sshd && \
+    mkdir -p /run/sshd /var/empty && \
     \
     # Remove default SSH host keys
     rm -f /etc/ssh/ssh_host_*_key*

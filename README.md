@@ -10,10 +10,10 @@
 ## Introduction
 This repository is a fork of [`serversideup/docker-ssh`](https://github.com/serversideup/docker-ssh), maintained at [`ays7/docker-ssh`](https://github.com/ays7/docker-ssh).
 
-It provides a hardened SSH tunnel container based on Debian, designed exclusively for establishing secure port-forwarding tunnels into your cluster, with interactive shell sessions and command execution strictly locked down.
+It provides a hardened SSH tunnel container based on Alpine Linux, designed exclusively for establishing secure port-forwarding tunnels into your cluster, with interactive shell sessions and command execution strictly locked down.
 
 ## Features
-- 🐧 **Debian-based** - Lightweight footprint based on Debian Bookworm slim
+- 🏔️ **Alpine-based** - Ultra-lightweight footprint (~18MB) based on Alpine Linux
 - 🚫 **No Shell / No Command Execution** - Dedicated tunneling bastion; interactive login shells and remote commands are prohibited (`nologin` + `PermitTTY no`)
 - 🎯 **Destination Restrictions** - Whitelist allowed tunnel destinations with `SSH_PERMIT_OPEN` (and listen ports with `SSH_PERMIT_LISTEN`)
 - 🤝 **Key-based auth via ENV** - Grant access with the `AUTHORIZED_KEYS` environment variable
@@ -29,7 +29,7 @@ This is a list of the docker images this repository creates:
 
 | Image | Image Size | Description |
 | --------- | -------------------- | ----------- |
-| `serversideup/docker-ssh` |[![DockerHub serversideup/docker-ssh](https://img.shields.io/docker/image-size/serversideup/docker-ssh/latest?label=latest)](https://hub.docker.com/r/serversideup/docker-ssh) | A hardened SSH tunnel server based on Debian Bookworm. |
+| `ays7/docker-ssh` |[![DockerHub](https://img.shields.io/badge/dockerhub-ays7%2Fdocker--ssh-blue)](https://hub.docker.com/r/ays7/docker-ssh) | A hardened SSH tunnel server based on Alpine Linux (~18MB). |
 
 ## Usage instructions
 All variables are documented here:

@@ -226,29 +226,6 @@ echo "🎨 Creating custom MOTD..."
     echo '\033[38;5;75m╭──────────────────────────────────────────────────────╮\033[0m'
     echo '\033[38;5;75m│                  🔐 SSH Tunnel Portal                │\033[0m'
     echo '\033[38;5;75m╰──────────────────────────────────────────────────────╯\033[0m'
-    echo
-    echo '\033[1;36m📡 Connection Info:\033[0m'
-    echo "   • User: ${ssh_user}"
-    echo "   • Port: ${ssh_port}"
-    echo "   • Container IP: $(hostname -i)"
-    echo "   • Container ID: $(hostname)"
-    echo
-    echo '\033[1;35m🔒 Security:\033[0m'
-    echo "   • Allowed Users & IPs: ${ALLOWED_IPS}"
-    echo "   • Shell Login: Disabled (tunneling only)"
-    echo "   • Forwarding Mode: Local (-L) & SOCKS (-D) only (reverse disabled)"
-    echo "   • Tunnel Destinations: ${SSH_PERMIT_OPEN:-any}"
-    echo "   • Root Login: Disabled by default"
-    echo "   • Password Auth: Disabled by default"
-    echo
-    echo '\033[1;33m⚡ Need Help?\033[0m'
-    echo '   • Docs: https://github.com/ays7/docker-ssh'
-    echo '   • Issues: https://github.com/ays7/docker-ssh/issues'
-    echo '   • Upstream: https://github.com/serversideup/docker-ssh'
-    echo '   • Community: https://serversideup.net/discord'
-    echo '   • Sponsor: https://github.com/sponsors/serversideup'
-    echo
-    echo '\033[38;5;242m─────────────────────────────────────────────────────────\033[0m'
 } > /etc/motd
 
 # Execute the CMD

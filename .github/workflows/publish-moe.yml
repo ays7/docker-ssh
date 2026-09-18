@@ -54,5 +54,5 @@ jobs:
           labels: |
             org.opencontainers.image.title=ssh-tunnels-server
             org.opencontainers.image.description=Hardened SSH tunnel container
-            org.opencontainers.image.source=https://github.com/ays7/docker-ssh
+            org.opencontainers.image.source=https://github.com/ays7/ssh-tunnels-server
             org.opencontainers.image.revision=${{ github.sha }}

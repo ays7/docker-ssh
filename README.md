@@ -8,9 +8,58 @@
 </p>
 
 ## Introduction
-This repository is a fork of [`serversideup/docker-ssh`](https://github.com/serversideup/docker-ssh), maintained at [`ays7/ssh-tunnels-server`](https://github.com/ays7/ssh-tunnels-server).
+This repository is a fork of [`serversideup/docker-ssh`](https://github.com/serversideup/docker-ssh), maintained at [`ays7/ssh-tunnels-server`](https://github.com/ays7/ssh-tunnels-server) (branch: `moe`).
 
 It provides a hardened SSH tunnel container based on Alpine Linux, designed exclusively for establishing secure port-forwarding tunnels into your cluster, with interactive shell sessions and command execution strictly locked down.
+
+## Fork Differences & Enhancements (vs Upstream)
+
+This fork (`moe` branch) diverges from upstream [`serversideup/docker-ssh`](https://github.com/serversideup/docker-ssh) (original `master`/`main` branch) by converting a general-purpose SSH container into a **hardened, high-performance port-forwarding bastion**:
+
+### Quick Comparison
+
+| Feature / Aspect | Upstream ([`serversideup/docker-ssh`](https://github.com/serversideup/docker-ssh)) | This Fork (`moe` branch) |
+| :--- | :--- | :--- |
+| **Base Image & Size** | Debian Bookworm Slim (`~80–100MB+`) | **Alpine Linux (`~18MB`)** — minimal attack surface |
+| **Primary Purpose** | General SSH server (shell access, rsync, tunnels) | **Dedicated tunneling bastion** (port forwarding only) |
+| **Interactive Shells** | Enabled (`/bin/bash` or `/bin/sh`) | **Disabled** (`/usr/local/bin/nologin-tunnel`, `PermitTTY no`) |
+| **Remote Command Execution** | Enabled | **Blocked** (rejects commands with descriptive notice) |
+| **Forwarding Directions** | Local & Remote (`AllowTcpForwarding yes`, `PermitTunnel yes`) | **Local & Dynamic only** (`AllowTcpForwarding local`; reverse `-R` blocked) |
+| **Destination Whitelisting** | Not supported | **Supported via `SSH_PERMIT_OPEN`** (`host:port` allowlist) |
+| **Gateway Ports** | Configurable via `SSH_GATEWAYPORTS` | **Disabled (`GatewayPorts no`)** to prevent unintentional external exposure |
+| **IPv6 Fallback Delays** | `AddressFamily any` (triggers multi-second timeouts in Docker) | **`AddressFamily inet` (IPv4-first)** — eliminates SYN stalls & DNS delays |
+| **Packet Tagging (QoS)** | OpenSSH default (`cs1` scavenger class on tunnels) | **`IPQoS none`** — avoids Wi-Fi/ISP/cloud rate-limiting & packet drops |
+| **Compression** | Protocol default | **Disabled by default (`Compression no`)** for higher throughput & lower latency |
+| **Cipher & KEX Prioritization** | OpenSSH defaults | **Hardware AES-GCM prioritized**, `curve25519-sha256` first (prevents MTU fragmentation) |
+| **Concurrency Headroom** | `MaxSessions 10`, `MaxStartups 10:30:100` | **`MaxSessions 100`**, **`MaxStartups 100:30:500`** (multi-threaded clients & SOCKS) |
+| **Connection Feedback** | No pre-auth banner; MOTD only on login shells | **Pre-auth `SSH_BANNER`** (works with `-N`) + MOTD tunnel session holder |
+| **Installed Packages** | `openssh-server`, `locales`, `iputils-ping`, `rsync`, `tini` | Stripped down: `openssh`, `shadow`, `tini` |
+
+### Key Enhancements in Detail
+
+1. **Zero-Shell Security Lockdown**
+   - **Dedicated Tunnel Shell**: User shell is set to `/usr/local/bin/nologin-tunnel`. Any command invocation or shell access attempt is rejected with a clear explanation (`/etc/nologin.txt`).
+   - **Safe Connection Holding**: When connecting without `-N` (standard `ssh -L ...`), the session prints the connection banner/MOTD and holds the tunnel open via `sleep infinity` until you press <kbd>Ctrl</kbd>+<kbd>C</kbd> — without exposing a shell.
+   - **Hardened SSH Daemon**: Configured with `PermitTTY no`, `PermitUserRC no`, `PermitTunnel no`, and `AllowStreamLocalForwarding no`.
+
+2. **Least-Privilege Forwarding Controls**
+   - **Local Forwarding Only**: `AllowTcpForwarding local` permits local port forwards (`-L`) and dynamic SOCKS proxies (`-D`), while preventing unauthorized reverse port forwarding (`-R`).
+   - **Destination Whitelisting (`SSH_PERMIT_OPEN`)**: Restrict tunnel destinations to specific services and ports (e.g. `SSH_PERMIT_OPEN="mariadb:3306 redis:6379"`).
+   - **Locked Gateway Ports**: Enforces `GatewayPorts no` so tunnel ports cannot be bound to public interfaces.
+
+3. **High-Throughput & Low-Latency Network Optimizations**
+   - **IPv4-First Resolution (`SSH_ADDRESS_FAMILY=inet`)**: Avoids Alpine `musl libc` parallel A/AAAA lookup delays and TCP SYN timeout stalls on container networks without outbound IPv6 routing.
+   - **No CS1 Scavenger Tagging (`SSH_IPQOS=none`)**: OpenSSH 7.8+ marks non-interactive tunnel packets with DSCP `cs1`, causing Wi-Fi routers (WMM background queue), ISPs, and cloud hypervisors to deprioritize or throttle packets under load. `none` keeps traffic in standard Best Effort delivery.
+   - **No Protocol Compression Overhead (`SSH_COMPRESSION=no`)**: Eliminates CPU bottlenecks and packet buffering in single-threaded OpenSSH, improving throughput for database queries, APIs, and TLS streams.
+   - **Hardware-Accelerated Ciphers**: Prioritizes `aes128-gcm@openssh.com` and `aes256-gcm@openssh.com` for AES-NI / ARMv8 Crypto acceleration.
+   - **MTU-Safe Key Exchange**: Prioritizes `curve25519-sha256` to avoid packet fragmentation (>1000 bytes) on Docker bridge and VPN networks.
+   - **Increased Concurrency Limits**: `MaxSessions 100` and `MaxStartups 100:30:500` handle multi-threaded clients (e.g. DBeaver, TablePlus) and browser SOCKS proxies without connection dropping.
+
+4. **Streamlined Footprint & UX**
+   - **Alpine Linux Base**: Image footprint reduced from ~100MB+ down to ~18MB, removing unneeded packages like `rsync` and `iputils-ping`.
+   - **Pre-Authentication Banner (`SSH_BANNER`)**: Displays connection status even when connecting with `-N`.
+
+
 
 ## Features
 - 🏔️ **Alpine-based** - Ultra-lightweight footprint (~18MB) based on Alpine Linux

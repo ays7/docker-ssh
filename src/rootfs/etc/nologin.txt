@@ -1,3 +1,2 @@
 This account is restricted to SSH port forwarding / tunneling only.
 Interactive shell sessions and command execution are disabled.
-Please connect with 'ssh -N ...' to establish tunnels.

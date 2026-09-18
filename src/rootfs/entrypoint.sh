@@ -8,6 +8,7 @@ ssh_host_key_dir=${SSH_HOST_KEY_DIR:-"/etc/ssh/ssh_host_keys"}
 ssh_user_home="/home/${ssh_user}"
 ssh_port=${SSH_PORT:-"2222"}
 allow_agent_forwarding=${SSH_ALLOW_AGENT_FORWARDING:-"no"}
+ssh_banner=${SSH_BANNER:-"Connected to SSH Tunnel Server."}
 
 
 if [ "$DEBUG" = "true" ]; then
@@ -170,6 +171,19 @@ if [ -n "${SSH_PERMIT_OPEN}" ]; then
     permit_open=$(echo "${SSH_PERMIT_OPEN}" | tr ',' ' ')
     echo "📡 Restricting tunnel destinations (PermitOpen: ${permit_open}) ..."
     echo "PermitOpen ${permit_open}" >> /etc/ssh/sshd_config.d/custom.conf
+fi
+
+# Configure SSH connection banner
+if [ "${ssh_banner}" != "false" ] && [ "${ssh_banner}" != "none" ]; then
+    banner_file="/etc/ssh/banner.txt"
+    if [ -f "${ssh_banner}" ]; then
+        banner_file="${ssh_banner}"
+    else
+        echo "${ssh_banner}" > "${banner_file}"
+    fi
+    chmod 644 "${banner_file}"
+    echo "📣 Setting SSH banner..."
+    echo "Banner ${banner_file}" >> /etc/ssh/sshd_config.d/custom.conf
 fi
 
 # Setup authorized keys

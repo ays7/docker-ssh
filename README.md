@@ -48,6 +48,7 @@ SSH_PORT|Listening port for SSH server (on container only. You'll still need to 
 SSH_USER|Username for the SSH user that other users will connect into as.|`tunnel`
 SSH_PERMIT_OPEN|Optional whitespace- or comma-separated list of `host:port` destinations allowed for port forwarding (e.g. `db:5432 redis:6379`).|unset (all destinations permitted)
 SSH_ALLOW_AGENT_FORWARDING|Allow SSH agent forwarding (`yes` or `no`).|`no`
+SSH_BANNER|SSH connection banner displayed on connect (even with `-N`). Can be text, a file path, or `false`/`none` to disable.|`Connected to SSH Tunnel Server.`
 
 
 ### 1. Set your `AUTHORIZED_KEYS` environment variable or provide a `/authorized_keys` file
@@ -71,10 +72,19 @@ You can see I'm forwarding `12345` to `2222`.
 ```sh
 docker run --rm --name=ssh --network=web -p 12345:2222 ghcr.io/ays7/ssh-tunnels-server:latest
 ```
-Because interactive shell logins and command executions are locked down, connect with `-N` (no command execution) when establishing tunnels:
+Because interactive shells and arbitrary command executions are locked down, you can establish tunnels using either of the following methods:
+
+**Method A: Standard tunnel connection (shows MOTD and status info)**
+```sh
+ssh -p 12345 -L 8080:target-service:80 tunnel@myserver.test
+```
+Upon successful authentication, the server displays the connection MOTD confirming the tunnel is active, and keeps the tunnel open until you press <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+
+**Method B: Tunnel connection with `-N` (shows connection banner)**
 ```sh
 ssh -N -p 12345 -L 8080:target-service:80 tunnel@myserver.test
 ```
+Displays the pre-auth connection banner (`Connected to SSH Tunnel Server.`) and runs quietly in the background without requesting a session.
 
 # Working example with MariaDB + SSH + Docker Swarm
 Here's an example of using it with MariaDB. This allows you to use Sequel Pro, TablePlus, or DBeaver to connect securely into your database server over an SSH tunnel 🥳

@@ -8,6 +8,7 @@ ssh_host_key_dir=${SSH_HOST_KEY_DIR:-"/etc/ssh/ssh_host_keys"}
 ssh_user_home="/home/${ssh_user}"
 ssh_port=${SSH_PORT:-"2222"}
 gatewayports=${SSH_GATEWAYPORTS:-"no"}
+allow_agent_forwarding=${SSH_ALLOW_AGENT_FORWARDING:-"no"}
 
 
 if [ "$DEBUG" = "true" ]; then
@@ -110,9 +111,12 @@ echo "🤖 Setting SSHD configuration..."
     echo "KerberosAuthentication no"
     echo "GSSAPIAuthentication no"
     echo "X11Forwarding no"
-    echo "AllowAgentForwarding yes"
+    echo "AllowAgentForwarding ${allow_agent_forwarding}"
+    echo "AllowStreamLocalForwarding no"
     echo "AllowTcpForwarding yes"
-    echo "PermitTunnel yes"
+    echo "PermitTTY no"
+    echo "PermitUserRC no"
+    echo "PermitTunnel no"
     echo "HostKey ${ssh_host_key_dir}/ssh_host_rsa_key"
     echo "HostKey ${ssh_host_key_dir}/ssh_host_ecdsa_key"
     echo "HostKey ${ssh_host_key_dir}/ssh_host_ed25519_key"
@@ -171,6 +175,20 @@ else
     echo "${ALLOWED_IPS}" >> /etc/ssh/sshd_config.d/custom.conf
 fi
 
+# Restrict tunnel destinations if configured
+if [ -n "${SSH_PERMIT_OPEN}" ]; then
+    permit_open=$(echo "${SSH_PERMIT_OPEN}" | tr ',' ' ')
+    echo "📡 Restricting tunnel destinations (PermitOpen: ${permit_open}) ..."
+    echo "PermitOpen ${permit_open}" >> /etc/ssh/sshd_config.d/custom.conf
+fi
+
+# Restrict remote listen ports if configured
+if [ -n "${SSH_PERMIT_LISTEN}" ]; then
+    permit_listen=$(echo "${SSH_PERMIT_LISTEN}" | tr ',' ' ')
+    echo "📡 Restricting remote listen ports (PermitListen: ${permit_listen}) ..."
+    echo "PermitListen ${permit_listen}" >> /etc/ssh/sshd_config.d/custom.conf
+fi
+
 # Setup authorized keys
 mkdir -p "${ssh_user_home}/.ssh/"
 
@@ -220,12 +238,15 @@ echo "🎨 Creating custom MOTD..."
     echo
     echo '\033[1;35m🔒 Security:\033[0m'
     echo "   • Allowed Users & IPs: ${ALLOWED_IPS}"
+    echo "   • Shell Login: Disabled (tunneling only)"
+    echo "   • Tunnel Destinations: ${SSH_PERMIT_OPEN:-any}"
     echo "   • Root Login: Disabled by default"
     echo "   • Password Auth: Disabled by default"
     echo
     echo '\033[1;33m⚡ Need Help?\033[0m'
-    echo '   • Docs: https://github.com/serversideup/docker-ssh'
-    echo '   • Issues: https://github.com/serversideup/docker-ssh/issues'
+    echo '   • Docs: https://github.com/ays7/docker-ssh'
+    echo '   • Issues: https://github.com/ays7/docker-ssh/issues'
+    echo '   • Upstream: https://github.com/serversideup/docker-ssh'
     echo '   • Community: https://serversideup.net/discord'
     echo '   • Sponsor: https://github.com/sponsors/serversideup'
     echo

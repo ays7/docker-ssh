@@ -22,16 +22,21 @@ PGID="$3"
 ############
 # Main
 ############
+# Register custom nologin shell in /etc/shells if not already present
+if ! grep -q "^/usr/local/bin/nologin-tunnel" /etc/shells 2>/dev/null; then
+    echo "/usr/local/bin/nologin-tunnel" >> /etc/shells
+fi
+
 if [ -f /etc/alpine-release ]; then
     # Alpine
     addgroup -g "${PGID}" "${username}" && \
-    adduser -u "${PUID}" -G "${username}" -h "/home/${username}" -s /bin/sh -D "${username}"
+    adduser -u "${PUID}" -G "${username}" -h "/home/${username}" -s /usr/local/bin/nologin-tunnel -D "${username}"
 else
     # Debian
     groupadd -g "${PGID}" "${username}" && \
     useradd --no-log-init \
             -m \
-            -s /bin/bash \
+            -s /usr/local/bin/nologin-tunnel \
             -d "/home/${username}" \
             -u "${PUID}" \
             -g "${PGID}" \

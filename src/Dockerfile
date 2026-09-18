@@ -5,9 +5,8 @@ FROM debian:bookworm-slim
 ENV ALLOWED_IPS="AllowUsers tunnel" \
     DEBUG_MODE="false" \
     DEBIAN_FRONTEND=noninteractive \
-    LANG="en_US.UTF-8" \
-    LANGUAGE="en_US.UTF-8" \
-    LC_ALL="en_US.UTF-8" \
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8" \
     PGID=9999 \
     PUID=9999 \
     SSH_HOST_KEY_DIR="/etc/ssh/ssh_host_keys" \
@@ -15,17 +14,12 @@ ENV ALLOWED_IPS="AllowUsers tunnel" \
     SSH_USER="tunnel" \
     SSH_GATEWAYPORTS="no"
 
-ARG PACKAGE_DEPENDENCIES="openssh-server,iputils-ping,locales,rsync,tini" \
+ARG PACKAGE_DEPENDENCIES="openssh-server,tini" \
     REPOSITORY_BUILD_VERSION="dev"
 
 COPY --chown=root:root --chmod=755 src/rootfs /
 
 RUN serversideup-dep-install-debian ${PACKAGE_DEPENDENCIES} && \
-    \
-    # Generate required locales
-    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-    locale-gen && \
-    update-locale LANG=en_US.UTF-8 && \
     \
     # Create unprivileged user
     serversideup-create-unprivileged-user "$SSH_USER" "${PUID}" "${PGID}" && \
@@ -44,13 +38,13 @@ RUN serversideup-dep-install-debian ${PACKAGE_DEPENDENCIES} && \
 # Expose the SSH port
 EXPOSE 2222
 
-LABEL org.opencontainers.image.title="serversideup/docker-ssh" \
-    org.opencontainers.image.description="Simple SSH container. Great for secure connections into clusters." \
-    org.opencontainers.image.url="https://github.com/serversideup/docker-ssh" \
-    org.opencontainers.image.source="https://github.com/serversideup/docker-ssh" \
-    org.opencontainers.image.documentation="https://github.com/serversideup/docker-ssh" \
-    org.opencontainers.image.vendor="ServerSideUp" \
-    org.opencontainers.image.authors="Jay Rogers (@jaydrogers)" \
+LABEL org.opencontainers.image.title="ays7/docker-ssh" \
+    org.opencontainers.image.description="Hardened SSH tunnel container. Exclusively for port forwarding and secure connections into clusters." \
+    org.opencontainers.image.url="https://github.com/ays7/docker-ssh" \
+    org.opencontainers.image.source="https://github.com/ays7/docker-ssh" \
+    org.opencontainers.image.documentation="https://github.com/ays7/docker-ssh" \
+    org.opencontainers.image.vendor="ays7" \
+    org.opencontainers.image.authors="Alexey (@ays7), Jay Rogers (@jaydrogers)" \
     org.opencontainers.image.version="${REPOSITORY_BUILD_VERSION}" \
     org.opencontainers.image.licenses="GPL-3.0-or-later"
 

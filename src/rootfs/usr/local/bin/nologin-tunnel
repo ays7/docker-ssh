@@ -1,0 +1,9 @@
+#!/bin/sh
+if [ -f /etc/nologin.txt ]; then
+    cat /etc/nologin.txt
+else
+    echo "This account is restricted to SSH port forwarding / tunneling only."
+    echo "Interactive shell sessions and command execution are disabled."
+    echo "Please connect with 'ssh -N ...' to establish tunnels."
+fi
+exit 1

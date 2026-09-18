@@ -7,7 +7,6 @@ ssh_user=${SSH_USER:-"${default_unprivileged_user}"}
 ssh_host_key_dir=${SSH_HOST_KEY_DIR:-"/etc/ssh/ssh_host_keys"}
 ssh_user_home="/home/${ssh_user}"
 ssh_port=${SSH_PORT:-"2222"}
-gatewayports=${SSH_GATEWAYPORTS:-"no"}
 allow_agent_forwarding=${SSH_ALLOW_AGENT_FORWARDING:-"no"}
 
 
@@ -31,17 +30,6 @@ validate_allowed_ips() {
         echo "Invalid ALLOWED_IPS format"
         exit 1
     fi
-}
-
-validate_gateway_ports() {
-    case "$1" in
-        yes|no|clientspecified) ;;
-        *)
-            echo "🚨🚨🚨 CONFIGURATION ERROR:"
-            echo "SSH_GATEWAYPORTS must be set to \"yes\", \"no\", or \"clientspecified\"."
-            exit 1
-            ;;
-    esac
 }
 
 ######################################################
@@ -98,7 +86,6 @@ if { [ ! -z "${PUID}" ] && [ "${PUID}" != "$default_uid" ]; } || { [ ! -z "${PGI
 fi
 
 # Set SSHD configuration
-validate_gateway_ports "${gatewayports}"
 echo "🤖 Setting SSHD configuration..."
 {
     echo "Port ${ssh_port}"
@@ -110,7 +97,7 @@ echo "🤖 Setting SSHD configuration..."
     echo "X11Forwarding no"
     echo "AllowAgentForwarding ${allow_agent_forwarding}"
     echo "AllowStreamLocalForwarding no"
-    echo "AllowTcpForwarding yes"
+    echo "AllowTcpForwarding local"
     echo "PermitTTY no"
     echo "PermitUserRC no"
     echo "PermitTunnel no"
@@ -139,7 +126,7 @@ echo "🤖 Setting SSHD configuration..."
     echo "MaxStartups 10:30:100"
     echo "ClientAliveInterval 300"
     echo "ClientAliveCountMax 2"
-    echo "GatewayPorts ${gatewayports}"
+    echo "GatewayPorts no"
 } > /etc/ssh/sshd_config.d/custom.conf
 
 if [ "$DEBUG" = "true" ]; then
@@ -183,13 +170,6 @@ if [ -n "${SSH_PERMIT_OPEN}" ]; then
     permit_open=$(echo "${SSH_PERMIT_OPEN}" | tr ',' ' ')
     echo "📡 Restricting tunnel destinations (PermitOpen: ${permit_open}) ..."
     echo "PermitOpen ${permit_open}" >> /etc/ssh/sshd_config.d/custom.conf
-fi
-
-# Restrict remote listen ports if configured
-if [ -n "${SSH_PERMIT_LISTEN}" ]; then
-    permit_listen=$(echo "${SSH_PERMIT_LISTEN}" | tr ',' ' ')
-    echo "📡 Restricting remote listen ports (PermitListen: ${permit_listen}) ..."
-    echo "PermitListen ${permit_listen}" >> /etc/ssh/sshd_config.d/custom.conf
 fi
 
 # Setup authorized keys
@@ -242,6 +222,7 @@ echo "🎨 Creating custom MOTD..."
     echo '\033[1;35m🔒 Security:\033[0m'
     echo "   • Allowed Users & IPs: ${ALLOWED_IPS}"
     echo "   • Shell Login: Disabled (tunneling only)"
+    echo "   • Forwarding Mode: Local (-L) & SOCKS (-D) only (reverse disabled)"
     echo "   • Tunnel Destinations: ${SSH_PERMIT_OPEN:-any}"
     echo "   • Root Login: Disabled by default"
     echo "   • Password Auth: Disabled by default"

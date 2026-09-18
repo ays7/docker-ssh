@@ -15,7 +15,8 @@ It provides a hardened SSH tunnel container based on Alpine Linux, designed excl
 ## Features
 - 🏔️ **Alpine-based** - Ultra-lightweight footprint (~18MB) based on Alpine Linux
 - 🚫 **No Shell / No Command Execution** - Dedicated tunneling bastion; interactive login shells and remote commands are prohibited (`nologin` + `PermitTTY no`)
-- 🎯 **Destination Restrictions** - Whitelist allowed tunnel destinations with `SSH_PERMIT_OPEN` (and listen ports with `SSH_PERMIT_LISTEN`)
+- 🎯 **Destination Restrictions** - Whitelist allowed tunnel destinations with `SSH_PERMIT_OPEN`
+- 🔒 **Forwarding Restrictions** - Strictly restricted to local forwarding (`-L`) and dynamic SOCKS proxy (`-D`); remote/reverse port forwarding (`-R`) is completely disabled
 - 🤝 **Key-based auth via ENV** - Grant access with the `AUTHORIZED_KEYS` environment variable
 - ⛔️ **Block IPs via ENV** - Block access with the `ALLOWED_IPS` environment variable
 - 🔒 **Unprivileged user** - All SSH connections are made as an unprivileged user
@@ -45,9 +46,7 @@ SSH_GROUP|Group name used for our SSH user.|`tunnelgroup`
 SSH_HOST_KEY_DIR|Location of where the SSH host keys should be stored.|`/etc/ssh/ssh_host_keys/`
 SSH_PORT|Listening port for SSH server (on container only. You'll still need to publish this port).|`2222`
 SSH_USER|Username for the SSH user that other users will connect into as.|`tunnel`
-SSH_GATEWAYPORTS|Setting for the GatewayPorts sshd_config for reverse tunnelling|`no`
 SSH_PERMIT_OPEN|Optional whitespace- or comma-separated list of `host:port` destinations allowed for port forwarding (e.g. `db:5432 redis:6379`).|unset (all destinations permitted)
-SSH_PERMIT_LISTEN|Optional whitespace- or comma-separated list of listen ports/addresses for remote port forwarding (e.g. `8080`).|unset (all listen ports permitted)
 SSH_ALLOW_AGENT_FORWARDING|Allow SSH agent forwarding (`yes` or `no`).|`no`
 
 
@@ -172,18 +171,6 @@ Any attempt to forward to a non-permitted host or port will be rejected by `sshd
 Create a dynamic SOCKS5 proxy on local port `1080` to route traffic through the container network:
 ```sh
 ssh -N -p 12345 -D 1080 tunnel@myserver.test
-```
-
-### 4. Remote / Reverse Port Forwarding (`-R`)
-If `SSH_GATEWAYPORTS` is enabled, reverse port forwarding can expose a local service through the container:
-```sh
-ssh -N -p 12345 -R 8080:localhost:8080 tunnel@myserver.test
-```
-You can optionally restrict the remote ports clients can bind to using `SSH_PERMIT_LISTEN`:
-```yaml
-environment:
-  SSH_GATEWAYPORTS: "yes"
-  SSH_PERMIT_LISTEN: "8080"
 ```
 
 ## Resources

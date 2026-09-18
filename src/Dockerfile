@@ -8,8 +8,7 @@ ENV ALLOWED_IPS="AllowUsers tunnel" \
     PUID=9999 \
     SSH_HOST_KEY_DIR="/etc/ssh/ssh_host_keys" \
     SSH_PORT="2222" \
-    SSH_USER="tunnel" \
-    SSH_GATEWAYPORTS="no"
+    SSH_USER="tunnel"
 
 ARG PACKAGE_DEPENDENCIES="openssh shadow tini" \
     REPOSITORY_BUILD_VERSION="dev"
